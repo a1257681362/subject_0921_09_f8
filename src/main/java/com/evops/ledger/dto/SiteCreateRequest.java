@@ -18,6 +18,8 @@ public class SiteCreateRequest {
     /** 商圈 */
     @NotBlank(message = "商圈不能为空")
     private String businessDistrict;
+    /** 高空点位标记：1=高空点位，0/留空=普通点位 */
+    private Integer highAltitude;
     /** 经手人，留空取当前登录账号 */
     private String operatorName;
     private String remark;

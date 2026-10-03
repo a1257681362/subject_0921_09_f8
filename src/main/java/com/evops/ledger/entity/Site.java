@@ -30,6 +30,8 @@ public class Site extends BaseEntity {
     private String geoStatus;
     /** 当前生效的经纬度建档版本号，未建档为 null */
     private Integer geoVersionNo;
+    /** 高空点位标记：1=高空点位（必须派高空证有效的安装队），0=普通点位 */
+    private Integer highAltitude;
     /** 挂牌经手人 */
     private String operatorName;
     private String remark;

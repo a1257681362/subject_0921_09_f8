@@ -20,7 +20,7 @@
 - **外部回执**：挂回原单据；回执指向对冲单时自动回溯到根单。
 - **月度档期周历**：`/api/ledger/calendar?period=yyyy-MM` 一眼看哪块屏哪周空着。
 
-账号：演示账号 `demo / demo`，骨架账号 `bootstrap / bootstrap`（均为财务/系统视角，看全部客户、可审批）；F5 销售账号 `sales1 / sales1`、`sales2 / sales2`（只见名下客户），财务账号 `finance1 / finance1`；F6 巡查账号 `inspector1 / inspector1`（现场上报）、维护商账号 `vendor1 / vendor1`（回传处理结果），派单与复勘用 `demo / demo`。
+账号：演示账号 `demo / demo`，骨架账号 `bootstrap / bootstrap`（均为财务/系统视角，看全部客户、可审批）；F5 销售账号 `sales1 / sales1`、`sales2 / sales2`（只见名下客户），财务账号 `finance1 / finance1`；F6 巡查账号 `inspector1 / inspector1`（现场上报）、维护商账号 `vendor1 / vendor1`（回传处理结果），派单与复勘用 `demo / demo`；F8 安装队账号 `installer1 / installer1`（到场打卡、完工回执），派工与改期用 `demo / demo`。
 
 ## F2：素材流水与多规格转档（f2-asset-transcode-1）
 
@@ -121,6 +121,27 @@
 
 播放列表模块：播放列表（屏、在播指针、周锁版）；播放列表版本（保存/复制/顺延/锁版/改单审批逐版 + 快照留底）；播放列表状态（`DRAFT / LOCKED / PENDING / REJECTED / SUPERSEDED`，在播切换以 live 指针 + 告警为准）。
 
+## F8：安装派单与资质校验（f8-install-dispatch-1）
+
+隔壁城市出了高空坠落事故，安全员盯安装队盯得死紧，业务方还靠调度电话挨个问——安装派单全链路落进 evops-base：上刊单确认后自动生成派单，系统按资质和档期匹配安装队，师傅到场拍照打卡、完工回传回执，上刊单跟着走状态，改期通知到队，月底按队出完工量和准时率，结算认这个数。
+
+业务口径：
+
+- **点位补「高空点位」标记**：挂牌可填、老点位可补标（`PUT /api/sites/{siteNo}/high-altitude`）；高空点位必须派高空证有效的安装队。
+- **安装队档案**：队号 `TM+序列`、队名全局唯一；档案记高空证编号、有效期至、在册状态（`ACTIVE 在册 / PAUSED 停用`，停用不参与匹配）。无证队可接普通点位，高空点位必须持证。
+- **资质匹配版本**：高空证每录一次记一版——建档 `INITIAL`、换证 `RENEW`，旧版置 `SUPERSEDED` 永久可翻；**派单落匹配时的资质版本号与证件快照**（证号、有效期至），事后能翻「当时按哪版资质派的」。
+- **资质匹配状态**：`VALID 有效 / EXPIRED 已过期`，按「有效期至 ≥ 计划施工日」判定不固化。**高空证过期的队接不了高空点位——自动匹配跳过、手工派工硬拦，没有旁路**。
+- **上刊单确认后自动生成派单**：开单（POSTING）成功即在同事务生成安装派单（单号 `DP+序列`，对冲单不生成），并立即自动匹配：从发生日起在上刊周内逐日逐时段（上午→下午）找第一个资质合格且档期空闲的在册队。找不到合格队/时段，派单停 `PENDING 待派工` 并写事件，调度手工派工走同一套校验。
+- **一个队同一时段只排一个点位**：时段 = 自然日 + 上午/下午；`t_install_team_slot` 队+日期+时段唯一（占用 ACTIVE、释放 RELEASED 后条件更新抢回、唯一约束兜底并发）。派工占用、改期换占、完工/取消释放。
+- **师傅到场拍照打卡**：`ASSIGNED → ARRIVED`，**照片必填**（没照片不算打卡），打卡时刻落库。
+- **完工回传回执**：`ARRIVED → DONE`，回执说明必填、完工照片可选；完工时刻落库，时段释放，关闭即冻结。
+- **上刊单跟着走状态**：`install_status` 随派单流转——`NONE 无安装 / PENDING 待安装 / INSTALLING 安装中 / INSTALLED 已完工 / CANCELED 已取消`；落架/对冲自动取消在途派单（释放时段、通知到队）。
+- **改期要通知到队**：改期（原因必填、重校档期与资质）、改派（新旧队都通知）、取消都写 `t_install_notice` 通知记录（只追加）+ 事件留底；每流转一次 `version_no +1`，事件带单据快照。
+- **现场照片关闭前不许删**：派单关闭（完工/取消）前删照片直接拒；关闭后允许删，删一张写一条 `PHOTO_DELETE` 事件。照片落盘 `install.storage-root`（默认 `./data/install-photos`），SHA-256 指纹随档。
+- **月底按队出报表**：`GET /api/install/reports/teams?period=yyyy-MM` 按完工时刻归属月出每队完工量、准时量、准时率（完工日期 ≤ 最终计划施工日期 = 准时），`.../export` 导出 CSV（带 BOM），结算认这个数。
+
+资质匹配模块：安装队档案（高空证编号/有效期至、在册状态）与安装派单（计划时段、到场打卡、完工回执）；资质匹配版本：高空证建档/换证逐版留底（INITIAL 建档 / RENEW 换证，旧版 SUPERSEDED 可翻），派单落匹配时资质版本与证件快照；资质匹配状态：`VALID 有效 / EXPIRED 已过期`（按有效期至与计划施工日判定），派单状态 `PENDING 待派工 / ASSIGNED 已派工 / ARRIVED 已到场 / DONE 已完工 / CANCELED 已取消`。
+
 ## 接口一览（均在 /api 下，除 health/login 外需登录）
 
 | 动作 | 接口 |
@@ -160,16 +181,24 @@
 | 锁后改单：申请 / 待审批 / 通过 / 驳回 | `POST /api/playlists/{playlistNo}/change-requests`、`GET /api/playlists/change-requests/pending`、`POST .../change-requests/{versionId}/approve`、`POST .../change-requests/{versionId}/reject` |
 | 事件留底 / 告警翻查 / 解除告警 | `GET /api/playlists/{playlistNo}/events`、`GET /api/playlists/alerts?status=`、`POST /api/playlists/alerts/{alertId}/resolve` |
 | 到点切换扫描 / 周五自动锁版扫描 | `POST /api/playlists/switch/scan`、`POST /api/playlists/locks/scan` |
+| 点位补标高空 | `PUT /api/sites/{siteNo}/high-altitude` |
+| 安装队建档 / 翻查 / 详情 | `POST /api/install/teams`、`GET /api/install/teams?keyword=&status=`、`GET /api/install/teams/{teamNo}` |
+| 换证（资质版本链）/ 停用启用 | `POST /api/install/teams/{teamNo}/quals`、`GET .../quals`、`POST .../status` |
+| 派单翻查 / 全量档案 / 按上刊单查 | `GET /api/install/dispatches`、`GET /api/install/dispatches/{dispatchNo}`、`GET /api/install/orders/{orderNo}/dispatch` |
+| 手工派工（改派同口）/ 改期（通知到队） | `POST /api/install/dispatches/{dispatchNo}/assign`、`POST .../reschedule` |
+| 到场打卡（照片必填）/ 完工回执 | `POST /api/install/dispatches/{dispatchNo}/checkin`（multipart）、`POST .../done`（multipart） |
+| 照片下载 / 关闭后删照片（留事件） | `GET /api/install/photos/{photoId}/download`、`POST /api/install/photos/{photoId}/delete` |
+| 月度完工量准时率 / 导出 CSV | `GET /api/install/reports/teams?period=yyyy-MM`、`GET /api/install/reports/teams/export?period=` |
 
 授信上刊仍走上刊接口 `POST /api/orders`，请求体带 `quoteNo`（引用已提交报价单）即为授信单；落架/对冲接口不变，撤刊即释放额度。
 
-演示界面：启动后浏览器打开根路径 `/`（周例会演示用，十二个页签覆盖全流程）。
+演示界面：启动后浏览器打开根路径 `/`（周例会演示用，十三个页签覆盖全流程）。
 
 ## 启动
 
 1. 执行 `mvn -q -DskipTests compile` 验证骨架构建。
 2. 执行 `mvn spring-boot:run` 启动应用；Spring Boot 会自动执行 `src/main/resources/schema.sql`。
 3. H2 数据文件默认写入工作区 `data/evops`。如需修改路径，编辑 `application.yml` 中的 `jdbc:h2:file:` 连接串。
-4. 验证：`mvn test`（11 项底账口径测试 + 7 项素材转档测试 + 8 项坐标建档测试 + 13 项年度刊例计价测试 + 13 项客户授信回款测试 + 10 项异常上报整改测试 + 11 项屏体播放排片测试，独立内存 H2）。
+4. 验证：`mvn test`（11 项底账口径测试 + 7 项素材转档测试 + 8 项坐标建档测试 + 13 项年度刊例计价测试 + 13 项客户授信回款测试 + 10 项异常上报整改测试 + 11 项屏体播放排片测试 + 16 项安装派单资质测试，独立内存 H2）。
 
 表结构交付副本：`docs/schema/evops.sql`（容器内根目录 `../../docs/schema` 不可写，交付副本置于工作区内），应与 `src/main/resources/schema.sql` 保持一致。

@@ -37,6 +37,7 @@ public class SiteService {
         site.setOrientation(request.getOrientation().trim());
         site.setBusinessDistrict(request.getBusinessDistrict().trim());
         site.setStatus(LedgerEnums.SITE_LISTED);
+        site.setHighAltitude(normalizeHighAltitude(request.getHighAltitude()));
         site.setOperatorName(Operators.resolve(request.getOperatorName()));
         site.setRemark(request.getRemark());
         try {
@@ -45,6 +46,26 @@ public class SiteService {
             throw new BusinessException("点位编号 " + siteNo + " 已存在，重复编号不能建档");
         }
         return site;
+    }
+
+    /** 补标/改标高空点位：高空点位必须派高空证有效的安装队（F8）。 */
+    @Transactional(rollbackFor = Exception.class)
+    public Site markHighAltitude(String siteNo, Integer highAltitude, String operatorName) {
+        Site site = getByNo(siteNo);
+        site.setHighAltitude(normalizeHighAltitude(highAltitude));
+        site.setOperatorName(Operators.resolve(operatorName));
+        siteMapper.updateById(site);
+        return site;
+    }
+
+    private Integer normalizeHighAltitude(Integer value) {
+        if (value == null) {
+            return 0;
+        }
+        if (value != 0 && value != 1) {
+            throw new BusinessException("高空点位标记只认 0（普通）/ 1（高空）：" + value);
+        }
+        return value;
     }
 
     public Site getById(Long id) {

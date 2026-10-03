@@ -54,6 +54,10 @@ playlist:
   lock-scan-delay-ms: 3600000
   friday-deadline: "18:00"
 
+# F8 安装派单测试：照片落 target
+install:
+  storage-root: ./target/test-install-photos
+
 logging:
   level:
     com.evops: WARN

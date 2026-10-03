@@ -32,6 +32,8 @@ public class ShiroConfig {
         // F6：巡查员（现场上报异常）、维护商（处理回传）；调度派单与复勘用 demo/system 账号
         realm.addAccount("inspector1", "inspector1", "inspector");
         realm.addAccount("vendor1", "vendor1", "vendor");
+        // F8：安装队师傅（到场打卡、完工回执）；派工/改期用 demo/system 账号
+        realm.addAccount("installer1", "installer1", "installer");
         return realm;
     }
 

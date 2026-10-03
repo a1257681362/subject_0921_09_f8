@@ -83,6 +83,11 @@ playlist:
   # 周五下班时刻（HH:mm，24 小时制）：下周排片应在此刻前全部锁版
   friday-deadline: "18:00"
 
+# F8 安装派单与资质校验
+install:
+  # 现场照片（到场打卡/完工回传）落盘根目录（派单关闭前不许删）
+  storage-root: ./data/install-photos
+
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.evops

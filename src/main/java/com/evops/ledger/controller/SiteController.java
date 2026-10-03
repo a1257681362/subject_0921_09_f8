@@ -2,11 +2,13 @@ package com.evops.ledger.controller;
 
 import com.evops.common.ApiResponse;
 import com.evops.ledger.dto.SiteCreateRequest;
+import com.evops.ledger.dto.SiteHighAltitudeRequest;
 import com.evops.ledger.entity.Site;
 import com.evops.ledger.service.SiteService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -43,5 +45,12 @@ public class SiteController {
     @GetMapping("/{id}")
     public ApiResponse<Site> detail(@PathVariable Long id) {
         return ApiResponse.ok(siteService.getById(id));
+    }
+
+    /** 补标/改标高空点位（F8：高空点位必须派高空证有效的安装队）。 */
+    @PutMapping("/{siteNo}/high-altitude")
+    public ApiResponse<Site> markHighAltitude(@PathVariable String siteNo,
+                                              @Valid @RequestBody SiteHighAltitudeRequest request) {
+        return ApiResponse.ok(siteService.markHighAltitude(siteNo, request.getHighAltitude(), request.getOperatorName()));
     }
 }

@@ -82,6 +82,7 @@
     <div class="tab" data-tab="credit">⑩ 客户授信与回款</div>
     <div class="tab" data-tab="rectify">⑪ 异常上报整改</div>
     <div class="tab" data-tab="playlist">⑫ 屏体播放排片</div>
+    <div class="tab" data-tab="install">⑬ 安装派单</div>
   </div>
 
   <!-- 点位挂牌 -->
@@ -93,6 +94,7 @@
       <div><label>朝向 *</label><input id="siteOri" placeholder="如 朝北"></div>
       <div><label>商圈 *</label><input id="siteDistrict" placeholder="如 王府井"></div>
       <div class="span2"><label>备注</label><input id="siteRemark"></div>
+      <div><label>高空点位</label><select id="siteHigh"><option value="0">普通点位</option><option value="1">高空点位（须高空证有效队施工）</option></select></div>
       <div><label>经手人（留空取登录人）</label><input id="siteOperator"></div>
     </div>
     <div class="actions"><button onclick="registerSite()">挂牌建档</button></div>
@@ -553,6 +555,97 @@
     <table id="plListTable"></table>
     <div id="plDetail"></div>
   </div>
+
+  <!-- ⑬ 安装派单 -->
+  <div class="panel" id="panel-install">
+    <h3>安装队建档（高空证号 + 有效期至；无证队只能接普通点位）</h3>
+    <div class="grid">
+      <div><label>队名 *（全局唯一）</label><input id="ilTeamName" placeholder="如 迅捷安装一队"></div>
+      <div><label>联系人</label><input id="ilContact" placeholder="王师傅"></div>
+      <div><label>联系电话</label><input id="ilPhone"></div>
+      <div><label>高空证编号（有证才填）</label><input id="ilCertNo"></div>
+      <div><label>高空证有效期至</label><input id="ilCertUntil" type="date"></div>
+      <div style="align-self:end"><button onclick="ilRegisterTeam()">建档（资质记 v1）</button></div>
+    </div>
+    <div class="grid">
+      <div><label>关键字（队号/队名）</label><input id="ilQTeam"></div>
+      <div style="align-self:end"><button class="gray" onclick="ilLoadTeams()">翻队伍</button></div>
+    </div>
+    <table id="ilTeamTable"></table>
+
+    <h3>换证 / 停用启用（换证另起资质新版本，旧版留底可翻）</h3>
+    <div class="grid">
+      <div><label>队号 *（从列表点「选」）</label><input id="ilTeamNo" placeholder="TM…"></div>
+      <div><label>新高空证编号</label><input id="ilNewCertNo"></div>
+      <div><label>新有效期至</label><input id="ilNewCertUntil" type="date"></div>
+      <div style="align-self:end;display:flex;gap:8px">
+        <button onclick="ilRenew()">换证</button>
+        <button class="gray" onclick="ilQuals()">资质版本链</button>
+        <button class="warn" onclick="ilToggleStatus()">停用/启用</button>
+      </div>
+    </div>
+    <div id="ilQualList"></div>
+
+    <h3>派单翻查（上刊单确认即自动生成派单并自动匹配；业务方不用再打电话问调度）</h3>
+    <div class="grid">
+      <div><label>状态</label><select id="ilQStatus">
+        <option value="">全部</option>
+        <option value="PENDING">待派工</option>
+        <option value="ASSIGNED">已派工</option>
+        <option value="ARRIVED">已到场</option>
+        <option value="DONE">已完工</option>
+        <option value="CANCELED">已取消</option>
+      </select></div>
+      <div><label>队号</label><input id="ilQDTeam"></div>
+      <div><label>点位编号</label><input id="ilQDSite"></div>
+      <div><label>关键字（派单号/上刊单号）</label><input id="ilQDKeyword"></div>
+      <div style="align-self:end"><button class="gray" onclick="ilLoadDispatches()">翻派单</button></div>
+      <div><label>按上刊单号查派单</label><input id="ilQOrder" placeholder="PO…"></div>
+      <div style="align-self:end"><button class="gray" onclick="ilByOrder()">查派单</button></div>
+    </div>
+    <table id="ilDispatchTable"></table>
+
+    <h3>操作区（从上方列表点「选」填派单号）</h3>
+    <div class="grid">
+      <div><label>派单号 *</label><input id="ilNo"></div>
+    </div>
+    <div class="grid">
+      <div><label>派工队号 *（手工派工/改派）</label><input id="ilAssignTeam" placeholder="TM…"></div>
+      <div><label>计划施工日 *</label><input id="ilAssignDate" type="date"></div>
+      <div><label>时段 *</label><select id="ilAssignSlot"><option value="AM">上午</option><option value="PM">下午</option></select></div>
+      <div style="align-self:end"><button onclick="ilAssign()">手工派工/改派</button></div>
+    </div>
+    <div class="grid">
+      <div><label>改期-新施工日 *</label><input id="ilReDate" type="date"></div>
+      <div><label>改期-新时段 *</label><select id="ilReSlot"><option value="AM">上午</option><option value="PM">下午</option></select></div>
+      <div class="span2"><label>改期原因 *（通知到队）</label><input id="ilReReason" placeholder="如 客户要求避开营业高峰"></div>
+      <div style="align-self:end"><button class="warn" onclick="ilReschedule()">改期并通知到队</button></div>
+    </div>
+    <div class="grid">
+      <div><label>到场打卡照片 *（没照片不算打卡）</label><input id="ilCheckinPhotos" type="file" accept="image/*" multiple></div>
+      <div style="align-self:end"><button onclick="ilCheckin()">师傅到场打卡</button></div>
+      <div class="span2"><label>完工回执说明 *</label><input id="ilReceipt" placeholder="画面已上齐，验收无误"></div>
+      <div><label>完工照片（可选）</label><input id="ilDonePhotos" type="file" accept="image/*" multiple></div>
+      <div style="align-self:end"><button onclick="ilDone()">完工回传回执</button></div>
+    </div>
+
+    <h3>派单档案（事件版本留底 · 现场照片 · 到队通知）</h3>
+    <div class="actions">
+      <button class="gray" onclick="ilDetail()">查档案</button>
+      <span class="muted">照片在派单关闭前不许删；高空证过期的队接不了高空点位，自动匹配跳过、手工派工硬拦。</span>
+    </div>
+    <div id="ilDetail"></div>
+
+    <h3>月度安装队报表（完工量与准时率，结算认这个数）</h3>
+    <div class="grid">
+      <div><label>归属期间 yyyy-MM</label><input id="ilPeriod" placeholder="2026-10"></div>
+      <div style="align-self:end;display:flex;gap:8px">
+        <button class="gray" onclick="ilReport()">出报表</button>
+        <button class="gray" onclick="ilExport()">导出 CSV</button>
+      </div>
+    </div>
+    <table id="ilReportTable"></table>
+  </div>
 </div>
 
 <script>
@@ -601,7 +694,7 @@ async function doLogin() {
 async function init() {
   // header 占位（登录后填充）
   document.body.insertAdjacentHTML('afterbegin',
-    '<header><h1>户外广告点位与上刊底账 <span class="muted" style="color:#c8d4e6">EVOPS f1·f2·f3·f4·f5·f6·f7</span></h1><span class="who"></span></header>');
+    '<header><h1>户外广告点位与上刊底账 <span class="muted" style="color:#c8d4e6">EVOPS f1·f2·f3·f4·f5·f6·f7·f8</span></h1><span class="who"></span></header>');
   document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
     document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
@@ -611,6 +704,7 @@ async function init() {
     if (t.dataset.tab === 'credit') { loadCustomers(); loadPending(); }
     if (t.dataset.tab === 'rectify') { rfLoadTypes(); rfLoad(); }
     if (t.dataset.tab === 'playlist') { plLoad(); }
+    if (t.dataset.tab === 'install') { ilLoadTeams(); ilLoadDispatches(); }
   });
   document.getElementById('calPeriod').value = new Date().toISOString().slice(0, 7);
   try { const me = await call('GET', '/me'); showApp(me.username); loadSites(); loadSpecs(); } catch (e) { showLogin(); }
@@ -619,7 +713,8 @@ async function init() {
 async function registerSite() {
   try {
     await call('POST', '/sites', { siteNo: val('siteNo'), sizeSpec: val('siteSize'), orientation: val('siteOri'),
-      businessDistrict: val('siteDistrict'), remark: val('siteRemark'), operatorName: val('siteOperator') });
+      businessDistrict: val('siteDistrict'), highAltitude: Number(val('siteHigh') || 0),
+      remark: val('siteRemark'), operatorName: val('siteOperator') });
     toast('挂牌建档成功', true); ['siteNo','siteSize','siteOri','siteDistrict','siteRemark'].forEach(i => document.getElementById(i).value = '');
     loadSites();
   } catch (e) { toast(e.message); }
@@ -630,11 +725,12 @@ async function loadSites() {
     const list = await call('GET', '/sites?siteNo=' + encodeURIComponent(val('qSiteNo')||'')
       + '&businessDistrict=' + encodeURIComponent(val('qDistrict')||'') + '&orientation=' + encodeURIComponent(val('qOri')||''));
     document.getElementById('siteTable').innerHTML =
-      '<tr><th>编号</th><th>尺寸</th><th>朝向</th><th>商圈</th><th>状态</th><th>纬度</th><th>经度</th><th>建档</th><th>挂牌经手人</th><th>挂牌时间</th></tr>'
+      '<tr><th>编号</th><th>尺寸</th><th>朝向</th><th>商圈</th><th>状态</th><th>纬度</th><th>经度</th><th>建档</th><th>高空</th><th>挂牌经手人</th><th>挂牌时间</th></tr>'
       + list.map(s => `<tr><td>${esc(s.siteNo)}</td><td>${esc(s.sizeSpec)}</td><td>${esc(s.orientation)}</td>
         <td>${esc(s.businessDistrict)}</td><td>已挂牌</td>
         <td>${esc(s.lat)}</td><td>${esc(s.lng)}</td>
         <td>${s.geoStatus === 'FILED' ? '<span class="tag success">已建档 v' + s.geoVersionNo + '</span>' : '<span class="tag pending">未建档</span>'}</td>
+        <td>${s.highAltitude === 1 ? '<span class="tag failed">高空</span>' : ''}</td>
         <td>${esc(s.operatorName)}</td><td>${esc(s.createTime)}</td></tr>`).join('');
   } catch (e) { toast(e.message); }
 }
@@ -1634,6 +1730,197 @@ function plEventLabel(t){ return { CREATE:'建档', SAVE:'编排保存', COPY:'�
   LOCK:'人工锁版', AUTO_LOCK:'周五自动锁版', CHANGE_REQUEST:'锁后改单申请', APPROVE:'审批通过', REJECT:'审批驳回', SWITCH:'到点切换' }[t]||t; }
 function plAlertLabel(t){ return { SWITCH_FAILED:'切换失败', GAP:'播放空档', MISSING_ASSET:'素材缺失',
   WEEK_EMPTY:'下周无排片', LOCK_FAILED:'自动锁版失败', PENDING_CHANGE:'改单待审批' }[t]||t; }
+
+// ---- ⑬ 安装派单 ----
+function ilStatusTag(s){
+  return { PENDING:'<span class="tag pending">待派工</span>', ASSIGNED:'<span class="tag hung">已派工</span>',
+    ARRIVED:'<span class="tag hung">已到场</span>', DONE:'<span class="tag success">已完工</span>',
+    CANCELED:'<span class="tag down">已取消</span>' }[s] || esc(s);
+}
+function ilQualTag(s){
+  return s==='VALID' ? '<span class="tag success">证有效</span>' : '<span class="tag failed">证过期/无证</span>';
+}
+async function ilRegisterTeam(){
+  if(!val('ilTeamName')){ toast('请填队名'); return; }
+  try{
+    const d=await call('POST','/install/teams',{ teamName:val('ilTeamName'), contactName:val('ilContact'),
+      contactPhone:val('ilPhone'), certNo:val('ilCertNo'), certValidUntil:val('ilCertUntil') });
+    toast('安装队建档成功 '+d.teamNo+'，资质记 v1',true);
+    ['ilTeamName','ilContact','ilPhone','ilCertNo','ilCertUntil'].forEach(i=>document.getElementById(i).value='');
+    ilLoadTeams();
+  }catch(e){ toast(e.message); }
+}
+async function ilLoadTeams(){
+  try{
+    const list=await call('GET','/install/teams?keyword='+encodeURIComponent(val('ilQTeam')||''));
+    document.getElementById('ilTeamTable').innerHTML=
+      '<tr><th>队号</th><th>队名</th><th>联系人</th><th>状态</th><th>高空证</th><th>有效期至</th><th>资质</th><th>版本</th><th></th></tr>'
+      + list.map(t=>`<tr class="${t.status==='PAUSED'?'closed':''}">
+        <td>${esc(t.teamNo)}</td><td>${esc(t.teamName)}</td>
+        <td>${esc(t.contactName)||''} ${esc(t.contactPhone)||''}</td>
+        <td>${t.status==='ACTIVE'?'在册':'<span class="tag down">停用</span>'}</td>
+        <td>${esc(t.certNo)||'<span class="muted">无证</span>'}</td><td>${esc(t.certValidUntil)||''}</td>
+        <td>${ilQualTag(t.qualStatus)}</td><td>v${t.currentQualVersionNo||1}</td>
+        <td><button class="sm gray" onclick="ilPickTeam('${esc(t.teamNo)}','${esc(t.teamName)}')">选</button></td></tr>`).join('')
+      || '<tr><td class="muted">还没有安装队，先建档</td></tr>';
+  }catch(e){ toast(e.message); }
+}
+function ilPickTeam(no,name){
+  document.getElementById('ilTeamNo').value=no;
+  document.getElementById('ilAssignTeam').value=no;
+  toast('已填入选中队 '+no+'（'+name+'）',true);
+}
+async function ilRenew(){
+  if(!val('ilTeamNo')){ toast('请填队号'); return; }
+  try{
+    const d=await call('POST',`/install/teams/${encodeURIComponent(val('ilTeamNo'))}/quals`,
+      { certNo:val('ilNewCertNo'), certValidUntil:val('ilNewCertUntil') });
+    toast('换证完成，资质升至 v'+d.currentQualVersionNo+'（旧版留底可翻）',true);
+    ['ilNewCertNo','ilNewCertUntil'].forEach(i=>document.getElementById(i).value='');
+    ilLoadTeams();
+  }catch(e){ toast(e.message); }
+}
+async function ilQuals(){
+  if(!val('ilTeamNo')){ toast('请填队号'); return; }
+  try{
+    const list=await call('GET',`/install/teams/${encodeURIComponent(val('ilTeamNo'))}/quals`);
+    document.getElementById('ilQualList').innerHTML='<ul style="font-size:12px">'
+      + list.map(v=>`<li>v${v.versionNo} · ${v.changeType==='INITIAL'?'建档':'换证'} · 证号 ${esc(v.certNo)||'无证'}
+        · 有效期至 ${esc(v.certValidUntil)||'-'} · ${v.status==='EFFECTIVE'?'<span class="tag success">生效中</span>':'<span class="tag down">已被新版取代</span>'}
+        · ${esc(v.operatorName)} <span class="muted">${esc(String(v.createTime).replace('T',' '))}</span></li>`).join('')+'</ul>';
+  }catch(e){ toast(e.message); }
+}
+async function ilToggleStatus(){
+  if(!val('ilTeamNo')){ toast('请填队号'); return; }
+  try{
+    const t=await call('GET','/install/teams/'+encodeURIComponent(val('ilTeamNo')));
+    const next = t.status==='ACTIVE' ? 'PAUSED' : 'ACTIVE';
+    const d=await call('POST',`/install/teams/${encodeURIComponent(val('ilTeamNo'))}/status`,{ status:next });
+    toast(next==='PAUSED'?'已停用（不参与匹配）':'已启用',true); ilLoadTeams();
+  }catch(e){ toast(e.message); }
+}
+async function ilLoadDispatches(){
+  try{
+    const q='?status='+encodeURIComponent(val('ilQStatus')||'')+'&teamNo='+encodeURIComponent(val('ilQDTeam')||'')
+      +'&siteNo='+encodeURIComponent(val('ilQDSite')||'')+'&keyword='+encodeURIComponent(val('ilQDKeyword')||'');
+    const list=await call('GET','/install/dispatches'+q);
+    document.getElementById('ilDispatchTable').innerHTML=
+      '<tr><th>派单号</th><th>上刊单</th><th>点位</th><th>高空</th><th>状态</th><th>安装队</th><th>计划</th><th>打卡</th><th>完工</th><th>版本</th><th></th></tr>'
+      + list.map(o=>`<tr class="${(o.status==='DONE'||o.status==='CANCELED')?'closed':''}">
+        <td>${esc(o.dispatchNo)}</td><td>${esc(o.orderNo)}</td><td>${esc(o.siteNo)}</td>
+        <td>${o.highAltitude===1?'<span class="tag failed">高空</span>':''}</td>
+        <td>${ilStatusTag(o.status)}</td><td>${esc(o.teamName)||'<span class="muted">待派</span>'}</td>
+        <td>${o.plannedDate?esc(o.plannedDate)+' '+(o.timeSlot==='AM'?'上午':'下午'):''}</td>
+        <td>${o.checkinTime?esc(String(o.checkinTime).replace('T',' ')):''}</td>
+        <td>${o.doneTime?esc(String(o.doneTime).replace('T',' ')):''}</td><td>v${o.versionNo}</td>
+        <td><button class="sm gray" onclick="ilPick('${esc(o.dispatchNo)}')">选</button></td></tr>`).join('')
+      || '<tr><td class="muted">没有派单（开上刊单即自动生成）</td></tr>';
+  }catch(e){ toast(e.message); }
+}
+function ilPick(no){ document.getElementById('ilNo').value=no; toast('已填入选中派单 '+no,true); ilDetail(); }
+async function ilByOrder(){
+  if(!val('ilQOrder')){ toast('请填上刊单号'); return; }
+  try{
+    const d=await call('GET','/install/orders/'+encodeURIComponent(val('ilQOrder'))+'/dispatch');
+    if(!d){ toast('该上刊单没有安装派单（对冲单不生成）'); return; }
+    document.getElementById('ilNo').value=d.dispatchNo;
+    toast('派单 '+d.dispatchNo+' 当前状态：'+({PENDING:'待派工',ASSIGNED:'已派工',ARRIVED:'已到场',DONE:'已完工',CANCELED:'已取消'}[d.status]||d.status),true);
+    ilDetail();
+  }catch(e){ toast(e.message); }
+}
+async function ilAssign(){
+  if(!val('ilNo')||!val('ilAssignTeam')||!val('ilAssignDate')){ toast('派单号、队号、计划施工日必填'); return; }
+  try{
+    const d=await call('POST',`/install/dispatches/${encodeURIComponent(val('ilNo'))}/assign`,
+      { teamNo:val('ilAssignTeam'), plannedDate:val('ilAssignDate'), timeSlot:val('ilAssignSlot') });
+    toast('已派工给 '+d.teamName+'，计划 '+d.plannedDate+' '+(d.timeSlot==='AM'?'上午':'下午')+'，已通知到队',true);
+    ilLoadDispatches(); ilDetail();
+  }catch(e){ toast(e.message); }
+}
+async function ilReschedule(){
+  if(!val('ilNo')||!val('ilReDate')||!val('ilReReason')){ toast('派单号、新施工日、改期原因必填'); return; }
+  try{
+    const d=await call('POST',`/install/dispatches/${encodeURIComponent(val('ilNo'))}/reschedule`,
+      { plannedDate:val('ilReDate'), timeSlot:val('ilReSlot'), reason:val('ilReReason') });
+    toast('已改期至 '+d.plannedDate+' '+(d.timeSlot==='AM'?'上午':'下午')+'，通知已到队',true);
+    document.getElementById('ilReReason').value=''; ilLoadDispatches(); ilDetail();
+  }catch(e){ toast(e.message); }
+}
+async function ilCheckin(){
+  if(!val('ilNo')){ toast('请填派单号'); return; }
+  const files=document.getElementById('ilCheckinPhotos').files;
+  if(!files||!files.length){ toast('到场打卡必须传照片，没照片不算打卡'); return; }
+  const fd=new FormData();
+  for(const f of files) fd.append('photos',f);
+  try{
+    const d=await callForm(`/install/dispatches/${encodeURIComponent(val('ilNo'))}/checkin`,fd);
+    toast('到场打卡成功 '+String(d.checkinTime).replace('T',' ')+'，上刊单转「安装中」',true);
+    document.getElementById('ilCheckinPhotos').value=''; ilLoadDispatches(); ilDetail();
+  }catch(e){ toast(e.message); }
+}
+async function ilDone(){
+  if(!val('ilNo')||!val('ilReceipt')){ toast('派单号、完工回执说明必填'); return; }
+  const fd=new FormData();
+  fd.append('receiptContent',val('ilReceipt'));
+  const files=document.getElementById('ilDonePhotos').files;
+  for(const f of files) fd.append('photos',f);
+  try{
+    const d=await callForm(`/install/dispatches/${encodeURIComponent(val('ilNo'))}/done`,fd);
+    toast('完工回执已回传，上刊单转「已完工」；本单进入月度结算',true);
+    document.getElementById('ilReceipt').value=''; document.getElementById('ilDonePhotos').value='';
+    ilLoadDispatches(); ilDetail();
+  }catch(e){ toast(e.message); }
+}
+async function ilDetail(){
+  if(!val('ilNo')){ toast('请填派单号'); return; }
+  try{
+    const d=await call('GET','/install/dispatches/'+encodeURIComponent(val('ilNo')));
+    const o=d.dispatch;
+    const head=`<p>派单 <b>${esc(o.dispatchNo)}</b> · 上刊单 ${esc(o.orderNo)} · 点位 ${esc(o.siteNo)}
+      ${o.highAltitude===1?'<span class="tag failed">高空点位</span>':''} · ${ilStatusTag(o.status)} · 版本 v${o.versionNo}</p>
+      <p class="muted">安装队：${esc(o.teamName)||'待派'}｜计划：${o.plannedDate?esc(o.plannedDate)+' '+(o.timeSlot==='AM'?'上午':'下午'):'-'}
+      ｜匹配资质：v${o.matchedQualVersionNo||'-'} ${esc(o.matchedCertNo)||''} ${o.matchedCertValidUntil?'有效至 '+esc(o.matchedCertValidUntil):''}
+      ｜打卡：${o.checkinTime?esc(String(o.checkinTime).replace('T',' ')):'-'}｜完工：${o.doneTime?esc(String(o.doneTime).replace('T',' ')):'-'}
+      ${o.cancelReason?'｜取消原因：'+esc(o.cancelReason):''}</p>
+      ${o.receiptContent?'<p class="muted">完工回执：'+esc(o.receiptContent)+'</p>':''}`;
+    const photos=(d.photos||[]).map(p=>`<li>[${p.phase==='CHECKIN'?'到场打卡':'完工回传'}]
+        <a href="/api/install/photos/${p.id}/download" target="_blank">${esc(p.fileName)}</a>
+        <span class="muted">（${(p.fileSize/1024).toFixed(1)}KB，${esc(p.uploaderName)} ${esc(String(p.uploadTime).replace('T',' '))}）</span>
+        ${(o.status==='DONE'||o.status==='CANCELED')?`<button class="sm danger" onclick="ilDeletePhoto(${p.id})">删（已关闭，留事件）</button>`:'<span class="muted">关闭前不可删</span>'}
+      </li>`).join('') || '<li class="muted">无照片</li>';
+    const notices=(d.notices||[]).map(n=>`<li>[${{ASSIGN:'派工',RESCHEDULE:'改期',CANCEL:'取消'}[n.noticeType]||n.noticeType}]
+        → ${esc(n.teamNo)}：${esc(n.content)} <span class="muted">${esc(n.operatorName)} ${esc(String(n.notifyTime).replace('T',' '))}</span></li>`).join('')
+      || '<li class="muted">无通知</li>';
+    const events=(d.events||[]).map(e=>`<li><b>${esc(e.eventType)}</b> v${e.versionNo} · ${esc(e.operatorName)}
+      · ${esc(String(e.eventTime).replace('T',' '))}<br><span class="muted">${esc(e.detail)}</span></li>`).join('');
+    document.getElementById('ilDetail').innerHTML = head
+      + `<p><b>现场照片（${(d.photos||[]).length}）</b></p><ul style="font-size:12px">${photos}</ul>
+         <p><b>到队通知（${(d.notices||[]).length}）</b></p><ul style="font-size:12px">${notices}</ul>
+         <p><b>事件留底（${(d.events||[]).length}）</b></p><ul style="font-size:12px">${events}</ul>`;
+  }catch(e){ toast(e.message); }
+}
+async function ilDeletePhoto(photoId){
+  try{
+    await call('POST','/install/photos/'+photoId+'/delete');
+    toast('照片已删（留删除事件）',true); ilDetail();
+  }catch(e){ toast(e.message); }
+}
+async function ilReport(){
+  if(!val('ilPeriod')){ toast('请填归属期间 yyyy-MM'); return; }
+  try{
+    const list=await call('GET','/install/reports/teams?period='+encodeURIComponent(val('ilPeriod')));
+    document.getElementById('ilReportTable').innerHTML=
+      '<tr><th>队号</th><th>队名</th><th>完工量</th><th>准时完工</th><th>超期完工</th><th>取消量</th><th>准时率</th></tr>'
+      + list.map(r=>`<tr><td>${esc(r.teamNo)}</td><td>${esc(r.teamName)}</td>
+        <td>${r.doneCount}</td><td>${r.ontimeCount}</td><td>${r.lateCount}</td><td>${r.canceledCount}</td>
+        <td>${r.ontimeRate!=null?'<b>'+r.ontimeRate+'%</b>':'-'}</td></tr>`).join('')
+      || '<tr><td class="muted">该期间没有完工/取消记录</td></tr>';
+  }catch(e){ toast(e.message); }
+}
+function ilExport(){
+  if(!val('ilPeriod')){ toast('请填归属期间 yyyy-MM'); return; }
+  window.open('/api/install/reports/teams/export?period='+encodeURIComponent(val('ilPeriod')),'_blank');
+}
 
 init();
 </script>
