@@ -21,6 +21,7 @@ import com.evops.ledger.mapper.SiteMapper;
 import com.evops.ledger.mapper.SlotBookingMapper;
 import com.evops.ledger.support.Operators;
 import com.evops.ledger.support.PostingCreditGateway;
+import com.evops.ledger.support.PostingInstallGateway;
 import com.evops.ledger.support.WeekRanges;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,11 +50,14 @@ public class OrderService {
     private final ObjectMapper objectMapper;
     /** 授信域可选实现：无授信模块时取不到，上刊流程与 F1 完全一致（普通单不占额度） */
     private final ObjectProvider<PostingCreditGateway> creditGatewayProvider;
+    /** 安装派单域可选实现：无安装模块时取不到，上刊流程与 F1 完全一致 */
+    private final ObjectProvider<PostingInstallGateway> installGatewayProvider;
 
     public OrderService(PostingOrderMapper orderMapper, SlotBookingMapper slotMapper,
                         OrderEventMapper eventMapper, OrderReceiptMapper receiptMapper,
                         SiteMapper siteMapper, ObjectMapper objectMapper,
-                        ObjectProvider<PostingCreditGateway> creditGatewayProvider) {
+                        ObjectProvider<PostingCreditGateway> creditGatewayProvider,
+                        ObjectProvider<PostingInstallGateway> installGatewayProvider) {
         this.orderMapper = orderMapper;
         this.slotMapper = slotMapper;
         this.eventMapper = eventMapper;
@@ -61,6 +65,7 @@ public class OrderService {
         this.siteMapper = siteMapper;
         this.objectMapper = objectMapper;
         this.creditGatewayProvider = creditGatewayProvider;
+        this.installGatewayProvider = installGatewayProvider;
     }
 
     /** 上刊：单号唯一、按周占档（同点位同周冲突拒绝）、归属月按发生日固化。 */
@@ -115,6 +120,12 @@ public class OrderService {
         recordEvent(order, LedgerEnums.EVENT_CREATE, occurDate, operator, null,
                 "开单上刊，画面「" + order.getCreativeName() + "」挂起"
                         + (order.getQuoteNo() != null ? "，授信占用报价单 " + order.getQuoteNo() : ""));
+
+        // 上刊确认：自动生成安装派单并按资质+档期匹配（无安装模块时取不到实现，跳过；无合格空闲队落待匹配，不阻断上刊）
+        PostingInstallGateway installGateway = installGatewayProvider.getIfAvailable();
+        if (installGateway != null) {
+            installGateway.onPostingConfirmed(order, operator);
+        }
         return order;
     }
 
@@ -185,6 +196,12 @@ public class OrderService {
         }
         recordEvent(offsetOrder, LedgerEnums.EVENT_CREATE, occurDate, operator,
                 original.getOrderNo(), "对冲补单，对冲原单 " + original.getOrderNo() + "，原因：" + reason);
+
+        // 原单对冲更正：联动取消其未完工的安装派单并释放队档期（已完工保留；无安装模块跳过）
+        PostingInstallGateway installGateway = installGatewayProvider.getIfAvailable();
+        if (installGateway != null) {
+            installGateway.onPostingOffset(original, operator);
+        }
         return offsetOrder;
     }
 

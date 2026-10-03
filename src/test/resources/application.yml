@@ -54,6 +54,13 @@ playlist:
   lock-scan-delay-ms: 3600000
   friday-deadline: "18:00"
 
+# F8 安装派单测试：照片落 target；待匹配补扫拉到 1 小时，匹配由测试显式触发，保证确定性
+install:
+  storage-root: ./target/test-install-photos
+  pending-scan-delay-ms: 3600000
+  default-job-hours: 4
+  default-start-hour: 9
+
 logging:
   level:
     com.evops: WARN

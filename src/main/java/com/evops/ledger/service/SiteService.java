@@ -37,6 +37,7 @@ public class SiteService {
         site.setOrientation(request.getOrientation().trim());
         site.setBusinessDistrict(request.getBusinessDistrict().trim());
         site.setStatus(LedgerEnums.SITE_LISTED);
+        site.setWorkType(normalizeWorkType(request.getWorkType()));
         site.setOperatorName(Operators.resolve(request.getOperatorName()));
         site.setRemark(request.getRemark());
         try {
@@ -78,5 +79,17 @@ public class SiteService {
         }
         wrapper.orderByAsc(Site::getSiteNo);
         return siteMapper.selectList(wrapper);
+    }
+
+    /** 作业性质归一：留空默认普通点位；只认 NORMAL / HIGH_ALTITUDE。 */
+    private String normalizeWorkType(String raw) {
+        if (raw == null || raw.trim().isEmpty()) {
+            return LedgerEnums.WORK_NORMAL;
+        }
+        String wt = raw.trim().toUpperCase();
+        if (LedgerEnums.WORK_NORMAL.equals(wt) || LedgerEnums.WORK_HIGH_ALTITUDE.equals(wt)) {
+            return wt;
+        }
+        throw new BusinessException("不支持的作业性质: " + raw + "（NORMAL 普通点位 / HIGH_ALTITUDE 高空点位）");
     }
 }

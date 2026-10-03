@@ -83,6 +83,16 @@ playlist:
   # 周五下班时刻（HH:mm，24 小时制）：下周排片应在此刻前全部锁版
   friday-deadline: "18:00"
 
+# F8 安装派单与资质匹配
+install:
+  # 到场/完工照片落盘根目录
+  storage-root: ./data/install-photos
+  # 待匹配派单补扫间隔（毫秒，默认 10 分钟；启动 40 秒后先扫一轮）
+  pending-scan-delay-ms: 600000
+  # 自动派单默认作业时段：上刊档期周一 default-start-hour 起、时长 default-job-hours 小时
+  default-job-hours: 4
+  default-start-hour: 9
+
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.evops

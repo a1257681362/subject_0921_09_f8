@@ -22,6 +22,8 @@ public class Site extends BaseEntity {
     private String businessDistrict;
     /** 状态：LISTED 挂牌 */
     private String status;
+    /** 作业性质：NORMAL 普通点位 / HIGH_ALTITUDE 高空点位（F8 安装派单资质门槛依据），默认普通 */
+    private String workType;
     /** 纬度（十进制度，DECIMAL 落库不丢小数位），未建档为 null */
     private BigDecimal lat;
     /** 经度（十进制度），未建档为 null */

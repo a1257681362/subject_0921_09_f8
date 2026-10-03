@@ -47,6 +47,12 @@ public class PostingOrder extends BaseEntity {
     private java.math.BigDecimal occupiedAmount;
     /** 是否占用授信：1 是 / 0 否 */
     private Integer creditUsed;
+    /** F8 安装派单 id（上刊确认自动生成后回写）；普通历史单为 null */
+    private Long installDispatchId;
+    /** 安装派单状态镜像（PENDING/ASSIGNED/ARRIVED/COMPLETED/CANCELLED），上刊单跟着派单走 */
+    private String installStatus;
+    /** 安装完工回传时刻 */
+    private LocalDateTime installFinishTime;
     private String offsetReason;
     /** 开单经手人 */
     private String operatorName;

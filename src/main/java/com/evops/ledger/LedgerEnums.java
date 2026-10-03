@@ -7,6 +7,10 @@ public final class LedgerEnums {
     /** 点位状态 */
     public static final String SITE_LISTED = "LISTED";
 
+    /** 点位作业性质：普通点位 / 高空点位（F8 安装派单：高空点位只派给持在有效期内高空作业证的队） */
+    public static final String WORK_NORMAL = "NORMAL";
+    public static final String WORK_HIGH_ALTITUDE = "HIGH_ALTITUDE";
+
     /** 单据种类：上刊单 / 对冲单 */
     public static final String KIND_POSTING = "POSTING";
     public static final String KIND_OFFSET = "OFFSET";
